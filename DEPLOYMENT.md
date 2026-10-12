@@ -1,5 +1,24 @@
 # Free cloud learning deployment
 
+## Enable Groq commentary (current provider)
+
+Set these variables in Render Environment, then save and redeploy:
+
+```text
+EXPLANATION_PROVIDER=groq
+GROQ_API_KEY=<your Groq key, pasted only in Render>
+GROQ_MODEL=openai/gpt-oss-120b
+GROQ_TIMEOUT=20
+```
+
+Groq and xAI Grok are separate services. A Groq key cannot authenticate to xAI.
+Keep the existing backend `API_KEY` unchanged. If a Groq key was stored under
+`XAI_API_KEY`, move its value to `GROQ_API_KEY`; never commit it. Requests go to
+`https://api.groq.com/openai/v1/chat/completions`. The response identifies `groq`
+when generation succeeds and `fallback` on failure. Free-tier limits and any
+paid usage depend on the Groq account. Customer inputs are sent to Groq; use
+synthetic profiles for this learning app.
+
 ## Enable xAI Grok commentary
 
 In Render → risk-insights-api → Environment, add:
