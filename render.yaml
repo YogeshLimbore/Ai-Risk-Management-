@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: risk-insights-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: python -m uvicorn app.api:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.12
+      - key: OLLAMA_ENABLED
+        value: "false"
+      - key: API_KEY
+        generateValue: true
+      - key: MAX_REQUESTS_PER_MINUTE
+        value: "30"
+      - key: MAX_CONCURRENT_PREDICTIONS
+        value: "2"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
