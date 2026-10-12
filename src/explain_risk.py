@@ -1,5 +1,6 @@
 import ollama
 from httpx import Client as ProviderClient
+from httpx import HTTPStatusError
 import logging
 import json
 logger = logging.getLogger(__name__)
@@ -27,8 +28,20 @@ def explain_customer_risk_with_grok(customer_data, probability, settings):
             return content.strip(), False
     except Exception as error:
         # Never log request headers, customer values, or provider response bodies.
-        logger.warning(json.dumps({"event": "explanation_failed", "provider": "grok",
-                                   "error_type": type(error).__name__}))
+        details = {"event": "explanation_failed", "provider": "grok",
+                   "error_type": type(error).__name__}
+        if isinstance(error, HTTPStatusError):
+            details["status"] = error.response.status_code
+            # Map provider text to a fixed label; never log the response body.
+            body = error.response.text.lower()
+            categories = [("billing", ("credit", "balance", "billing", "payment")),
+                          ("reasoning_parameter", ("reasoning_effort",)),
+                          ("token_parameter", ("max_tokens", "max_completion_tokens")),
+                          ("model_access", ("model",)),
+                          ("authentication", ("api key", "authentication", "unauthorized"))]
+            details["category"] = next((name for name, words in categories
+                                         if any(word in body for word in words)), "provider_request")
+        logger.warning(json.dumps(details))
         return generate_fallback_explanation(customer_data, probability), True
 
 
