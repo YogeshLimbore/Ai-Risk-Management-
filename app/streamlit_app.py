@@ -15,7 +15,7 @@ st.set_page_config(
 st.title("AI-Powered Risk & Insights System")
 st.write(
     "This application predicts customer loan default risk and generates "
-    "business-friendly explanations using a Machine Learning model and Ollama."
+    "general risk commentary using the configured explanation service."
 )
 
 
@@ -128,7 +128,9 @@ if st.button("Predict Risk"):
     st.write(explanation)
 
     if result["explanation_fallback"]:
-        st.info("The explanation service is unavailable. Rule-based commentary is shown.")
+        st.info("Rule-based commentary is shown because AI commentary is disabled or unavailable.")
+    else:
+        st.caption(f"Commentary provider: {result.get('explanation_provider', 'AI')}")
     st.caption("Commentary is not verified model reasoning. Human review is required.")
 
 

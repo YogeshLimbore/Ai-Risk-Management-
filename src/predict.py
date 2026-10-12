@@ -3,6 +3,7 @@ import hashlib
 import joblib
 import pandas as pd
 from src.explain_risk import get_risk_level, explain_customer_risk_with_ollama, generate_fallback_explanation
+from src.explain_risk import explain_customer_risk_with_grok
 FEATURES = ["age", "income", "loan_amount", "credit_score", "num_previous_defaults", "employment_years"]
 class PredictionService:
     def __init__(self, settings):
@@ -19,7 +20,10 @@ class PredictionService:
     def predict(self, customer_data):
         frame = pd.DataFrame([customer_data], columns=self.features)
         probability = float(self.model.predict_proba(frame)[0][1])
-        if self.settings.ollama_enabled:
+        provider = self.settings.explanation_provider
+        if provider == "grok":
+            explanation, fallback = explain_customer_risk_with_grok(customer_data, probability, self.settings)
+        elif provider == "ollama" and self.settings.ollama_enabled:
             explanation, fallback = explain_customer_risk_with_ollama(customer_data, probability,
                 self.settings.ollama_model, self.settings.ollama_host, self.settings.ollama_timeout)
         else:
@@ -27,5 +31,6 @@ class PredictionService:
         return {"prediction": int(self.model.predict(frame)[0]),
             "default_probability": round(probability, 4), "risk_level": get_risk_level(probability),
             "explanation": explanation, "explanation_fallback": fallback,
+            "explanation_provider": "fallback" if fallback else provider,
             "explanation_type": "general_risk_commentary", "probability_calibrated": False,
             "model_version": self.version}

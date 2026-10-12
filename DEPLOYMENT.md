@@ -1,5 +1,42 @@
 # Free cloud learning deployment
 
+## Enable xAI Grok commentary
+
+In Render → risk-insights-api → Environment, add:
+
+```text
+EXPLANATION_PROVIDER=grok
+XAI_API_KEY=<paste your key directly into Render>
+XAI_MODEL=grok-4.3
+XAI_TIMEOUT=20
+```
+
+Save and redeploy. Keep `API_KEY` (the UI-to-backend credential) unchanged;
+`XAI_API_KEY` is a separate provider secret and belongs only in Render.
+Do not place either key in source code or send it in chat.
+The xAI request uses `reasoning_effort=none` and a 500-token output limit.
+Provider failures, missing keys and empty responses use rule-based commentary.
+The response field `explanation_provider` identifies `grok` versus `fallback`.
+Switch `EXPLANATION_PROVIDER=fallback` to stop external LLM calls.
+
+Grok API calls incur xAI usage charges and transmit submitted customer values
+to xAI. Use synthetic inputs for this demo and configure a provider spending
+limit. Hosting remains on the existing free tiers. Generated commentary is
+still not validated Random Forest attribution.
+
+## Deployed learning environment
+
+- UI: https://mmij9cbffgs6e4dards5wm.streamlit.app/
+- API readiness: https://risk-insights-api.onrender.com/health
+- GitHub: https://github.com/YogeshLimbore/Ai-Risk-Management-
+- Branch: `main`; UI entrypoint: `app/streamlit_app.py`; Python: 3.13.
+- API runs on Render Free; UI runs on Streamlit Community Cloud.
+- The API key is stored in Render environment variables and Streamlit encrypted
+  secrets, not this repository.
+
+Verified an end-to-end hosted prediction with the default synthetic profile:
+No Default, uncalibrated score 26%, Low Risk, rule-based commentary.
+
 Browser → Streamlit Community Cloud → HTTPS → Render FastAPI.
 Cloud predictions use rule-based commentary; Ollama remains local.
 

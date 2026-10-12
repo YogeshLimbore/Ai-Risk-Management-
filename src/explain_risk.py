@@ -1,7 +1,35 @@
 import ollama
+from httpx import Client as ProviderClient
 import logging
 import json
 logger = logging.getLogger(__name__)
+
+
+def explain_customer_risk_with_grok(customer_data, probability, settings):
+    """Send commentary requests to xAI, retaining a clean fallback on failures."""
+    try:
+        if not settings.xai_api_key:
+            raise ValueError("Missing xAI configuration")
+        with ProviderClient(timeout=settings.xai_timeout, follow_redirects=False) as client:
+            response = client.post(
+                "https://api.x.ai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.xai_api_key}"},
+                json={"model": settings.xai_model, "stream": False,
+                      "reasoning_effort": "none", "max_tokens": 500,
+                      "messages": [
+                          {"role": "system", "content": "Provide general risk commentary, not verified model attribution. Never claim the score is calibrated. Do not recommend approval, denial, or loan terms; require qualified human review."},
+                          {"role": "user", "content": build_risk_prompt(customer_data, probability)}]},
+            )
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("Empty explanation")
+            return content.strip(), False
+    except Exception as error:
+        # Never log request headers, customer values, or provider response bodies.
+        logger.warning(json.dumps({"event": "explanation_failed", "provider": "grok",
+                                   "error_type": type(error).__name__}))
+        return generate_fallback_explanation(customer_data, probability), True
 
 
 def get_risk_level(probability: float) -> str:
